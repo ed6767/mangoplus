@@ -1,5 +1,5 @@
 # mangoplus
-New client for TrentBarton's Mango Card
+JSON API for TrentBarton's Mango Card
 This is a work in progress.
 
 ## Load on to your server
@@ -23,3 +23,6 @@ Okay, now that's done, upload dev.php to your mangoplus directory and index.htm 
 Visit the app page and open the console to make sure everything is running right.
 
 Bam. Build on this as you wish.
+
+
+⚠️ DO NOT USE IN PRODUCTION -- This API is slow and crap. Too many instances could hang your server. In addition, I did not develop this with security in mind. ⚠️
