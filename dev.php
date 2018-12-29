@@ -1,10 +1,19 @@
 <?php
 //Set json headers
 header('Content-Type: application/json');
-
+// First we check if the cache exists and is younger than 30 mins
+if (file_exists(base64_encode($_POST['username']). ".mango")) {
+    if (time() - filemtime(base64_encode($_POST['username']). ".mango") > 1800) {
+        //Continue
+    } else {
+        echo file_get_contents(base64_encode($_POST['username']). ".mango");
+        exit(); // Terminate
+    }
+}
 //Mink and other composer stuff
 require_once 'vendor/autoload.php';
 
+// Choose a Mink driver. More about it in later chapters.
 $driver = new \Behat\Mink\Driver\GoutteDriver();
 
 $session = new \Behat\Mink\Session($driver);
@@ -64,6 +73,9 @@ if ($url != "https://trentbarton.co.uk/mango/welcome") {
           'name' => '',
           'nickname' => ''
           ],
+    'trips' => [
+          
+    ],
       'type' => '',
       'number' => ''
     ];
@@ -106,7 +118,26 @@ if ($url != "https://trentbarton.co.uk/mango/welcome") {
     }
      $mangoArray['type'] = $mangoVars[1]->getText();
       $mangoArray['number'] = $mangoVars[0]->getText();
-    
+    // Now we can get the journey history. This requires the mango number so we just just take the -0 off the end split - 0
+    $session->visit('https://www.trentbarton.co.uk/mango/my-mango/journey-history?card='. explode("-",$mangoArray['number'])[0]); 
+    sleep(5); //5 seconds
+    //Okay, now we can convert the HTML journey table to json array.
+    /*
+    Notes:
+    The TB page uses some weird table in table thing, so there is a table of trips contatining mini tables.
+    We shall proccess these by just doing for each table in the table then converting that.
+
+    */
+
+
+
+    $mangoTripData = $page->findAll('css', '.journey-history');
+    $mangoTrips = $mangoTripData[0]->findAll('css', 'tr.times');
+    $mangoPrices = $mangoTripData[0]->findAll('css', 'tr.credit');
+foreach ($mangoTrips as $mangoTrip) {
+$finMangoTrip = array_filter(array_map('trim',preg_split ('/\r\n|\n|\r/',$mangoTrip->getText())));
+array_push($mangoArray['trips'], $finMangoTrip);
+}
     //Okay, so now we add it to the json array
     array_push($jsonoutput['mangoCards'], $mangoArray);
     
@@ -121,4 +152,6 @@ $session->stop();
 
 // Return JSON
 echo json_encode($jsonoutput);
+//Save to cache
+file_put_contents(base64_encode($_POST['username']). ".mango", json_encode($jsonoutput));
 ?>
